@@ -27,7 +27,7 @@ app.post("/participants", async (req, res) => {
   if (!name) {
     return res.sendStatus(422);
   }
-  const nameSchema = joi.object({ name: joi.string().required() });
+  const nameSchema = joi.object({ name: joi.string().min(1).required() });
   const nameValidation = nameSchema.validate({ name });
   if (nameValidation.error) {
     const errors = nameValidation.details.map((d) => d.message);
@@ -65,8 +65,8 @@ app.post("/messages", async (req, res) => {
   const { to, text, type } = req.body;
   const { user } = req.headers;
   const messageSchema = joi.object({
-    to: joi.string().required(),
-    text: joi.string().required(),
+    to: joi.string().min(1).required(),
+    text: joi.string().min(1).required(),
     type: joi.string().valid("message", "private_message").required(),
   });
   const messageValidation = messageSchema.validate({ to, text, type });
@@ -95,20 +95,25 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
   const { user } = req.headers;
+  let limit;
+  let reversedMessages;
   try {
     const messages = await db
       .collection("messages")
       .find({ $or: [{ from: user }, { to: user }, { to: "Todos" }] })
       .toArray();
     if (req.query.limit) {
-      const limit = Number(req.query.limit);
+      limit = Number(req.query.limit);
       if (limit < 1 || isNaN(limit)) {
         return res.sendStatus(422);
       } else {
-        return res.status(200).send(messages.slice(-limit));
+        reversedMessages = messages.slice(-limit).reverse();
+        return res.status(200).send(reversedMessages);
       }
     } else {
-      return res.status(200).send(messages);
+      limit = Number(req.query.limit);
+      reversedMessages = messages.slice(-limit).reverse();
+      return res.status(200).send(reversedMessages);
     }
   } catch {
     return res.sendStatus(422);
