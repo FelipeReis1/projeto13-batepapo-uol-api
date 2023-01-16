@@ -93,4 +93,26 @@ app.post("/messages", async (req, res) => {
   }
 });
 
+app.get("/messages", async (req, res) => {
+  const { user } = req.headers;
+  try {
+    const messages = await db
+      .collection("messages")
+      .find({ $or: [{ from: user }, { to: user }, { to: "Todos" }] })
+      .toArray();
+    if (req.query.limit) {
+      const limit = Number(req.query.limit);
+      if (limit < 1 || isNaN(limit)) {
+        return res.sendStatus(422);
+      } else {
+        return res.status(200).send(messages.slice(-limit));
+      }
+    } else {
+      return res.status(200).send(messages);
+    }
+  } catch {
+    return res.sendStatus(422);
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port: ${PORT} `));
