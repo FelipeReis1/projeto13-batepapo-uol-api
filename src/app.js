@@ -23,23 +23,23 @@ try {
 
 app.post("/participants", async (req, res) => {
   const { name } = req.body;
-
-  if (!name) {
-    return res.sendStatus(422);
-  }
-  const nameSchema = joi.object({ name: joi.string().min(1).required() });
-  const nameValidation = nameSchema.validate({ name });
-  if (nameValidation.error) {
-    const errors = nameValidation.details.map((d) => d.message);
-    return res.status(422).send(errors);
-  }
-  const nameAlreadyRegistered = await db
-    .collection("participants")
-    .findOne({ name: name });
-  if (nameAlreadyRegistered) {
-    return res.sendStatus(409);
-  }
   try {
+    if (!name) {
+      return res.sendStatus(422);
+    }
+    const nameSchema = joi.object({ name: joi.string().min(1).required() });
+    const nameValidation = nameSchema.validate({ name });
+    if (nameValidation.error) {
+      const errors = nameValidation.details.map((d) => d.message);
+      return res.status(422).send(errors);
+    }
+    const nameAlreadyRegistered = await db
+      .collection("participants")
+      .findOne({ name: name });
+    if (nameAlreadyRegistered) {
+      return res.sendStatus(409);
+    }
+
     await db
       .collection("participants")
       .insertOne({ name, lastStatus: Date.now() });
@@ -64,22 +64,23 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req, res) => {
   const { to, text, type } = req.body;
   const { user } = req.headers;
-  const messageSchema = joi.object({
-    to: joi.string().min(1).required(),
-    text: joi.string().min(1).required(),
-    type: joi.string().valid("message", "private_message").required(),
-  });
-  const messageValidation = messageSchema.validate({ to, text, type });
-  if (!messageValidation) {
-    return res.sendStatus(422);
-  }
-  const userRegistered = await db
-    .collection("participants")
-    .findOne({ name: user });
-  if (!userRegistered) {
-    return res.sendStatus(422);
-  }
   try {
+    const messageSchema = joi.object({
+      to: joi.string().min(1).required(),
+      text: joi.string().min(1).required(),
+      type: joi.string().valid("message", "private_message").required(),
+    });
+    const messageValidation = messageSchema.validate({ to, text, type });
+    if (!messageValidation) {
+      return res.sendStatus(422);
+    }
+    const userRegistered = await db
+      .collection("participants")
+      .findOne({ name: user });
+    if (!userRegistered) {
+      return res.sendStatus(422);
+    }
+
     await db.collection("messages").insertOne({
       from: user,
       to,
