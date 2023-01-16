@@ -142,4 +142,22 @@ app.post("/status", async (req, res) => {
   }
 });
 
+async function inactiveParticipants() {
+  const participants = await db.collection("participants").find().toArray();
+  const timeLimit = 10000;
+  for (let i = 0; i < participants.length; i++) {
+    const participantName = participants[i].name;
+    if (Date.now - participants[i].lastStatus < timeLimit) {
+      await db.collection("participants").deleteOne({ name: participantName });
+      await db.collection("messages").insertOne({
+        from: participantName,
+        to: "Todos",
+        text: "sai da sala...",
+        type: "status",
+        time: dayjs(Date.now()).format("HH:mm:ss"),
+      });
+    }
+  }
+}
+setInterval(inactiveParticipants, 15000);
 app.listen(PORT, () => console.log(`Server running on port: ${PORT} `));
