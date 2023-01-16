@@ -150,13 +150,10 @@ async function inactiveParticipants() {
   const timeLimit = 10000;
   {
     participants.forEach(async (p) => {
-      const participantName = p.name;
-      if (p.lastStatus < Date.now - timeLimit) {
-        await db
-          .collection("participants")
-          .deleteOne({ name: participantName });
+      if (Date.now() - p.lastStatus > timeLimit) {
+        await db.collection("participants").deleteOne({ name: p.name });
         await db.collection("messages").insertOne({
-          from: participantName,
+          from: p.name,
           to: "Todos",
           text: "sai da sala...",
           type: "status",
