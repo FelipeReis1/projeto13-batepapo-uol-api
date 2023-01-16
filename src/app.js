@@ -73,7 +73,10 @@ app.post("/messages", async (req, res) => {
       text: joi.string().required(),
       type: joi.string().valid("message", "private_message").required(),
     });
-    const messageValidation = messageSchema.validate({ to, text, type });
+    const messageValidation = messageSchema.validate(
+      { to, text, type },
+      { abortEarly: false }
+    );
     if (!messageValidation) {
       return res.sendStatus(422);
     }
@@ -145,18 +148,22 @@ app.post("/status", async (req, res) => {
 async function inactiveParticipants() {
   const participants = await db.collection("participants").find().toArray();
   const timeLimit = 10000;
-  for (let i = 0; i < participants.length; i++) {
-    const participantName = participants[i].name;
-    if (Date.now - participants[i].lastStatus < timeLimit) {
-      await db.collection("participants").deleteOne({ name: participantName });
-      await db.collection("messages").insertOne({
-        from: participantName,
-        to: "Todos",
-        text: "sai da sala...",
-        type: "status",
-        time: dayjs(Date.now()).format("HH:mm:ss"),
-      });
-    }
+  {
+    participants.map(async (p) => {
+      const participantName = p.name;
+      if (Date.now - participantName.lastStatus < timeLimit) {
+        await db
+          .collection("participants")
+          .deleteOne({ name: participantName });
+        await db.collection("messages").insertOne({
+          from: participantName,
+          to: "Todos",
+          text: "sai da sala...",
+          type: "status",
+          time: dayjs(Date.now()).format("HH:mm:ss"),
+        });
+      }
+    });
   }
 }
 setInterval(inactiveParticipants, 15000);
