@@ -149,9 +149,9 @@ async function inactiveParticipants() {
   const participants = await db.collection("participants").find().toArray();
   const timeLimit = 10000;
   {
-    participants.map(async (p) => {
+    participants.forEach(async (p) => {
       const participantName = p.name;
-      if (Date.now - p.lastStatus > timeLimit) {
+      if (p.lastStatus < Date.now - timeLimit) {
         await db
           .collection("participants")
           .deleteOne({ name: participantName });
