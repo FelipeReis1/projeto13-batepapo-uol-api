@@ -73,7 +73,10 @@ app.post("/messages", async (req, res) => {
       text: joi.string().required(),
       type: joi.string().valid("message", "private_message").required(),
     });
-    const messageValidation = messageSchema.validate({ to, text, type });
+    const messageValidation = messageSchema.validate(
+      { to, text, type },
+      { abortEarly: false }
+    );
     if (!messageValidation) {
       return res.sendStatus(422);
     }
@@ -146,11 +149,14 @@ async function inactiveParticipants() {
   const participants = await db.collection("participants").find().toArray();
   const timeLimit = 10000;
   {
-    participants.forEach(async (p) => {
-      if (Date.now - p.lastStatus < timeLimit) {
-        await db.collection("participants").deleteOne({ name: p.name });
+    participants.map(async (p) => {
+      const participantName = p.name;
+      if (Date.now - p.lastStatus > timeLimit) {
+        await db
+          .collection("participants")
+          .deleteOne({ name: participantName });
         await db.collection("messages").insertOne({
-          from: p.name,
+          from: participantName,
           to: "Todos",
           text: "sai da sala...",
           type: "status",
