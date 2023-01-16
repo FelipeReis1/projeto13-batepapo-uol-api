@@ -56,4 +56,9 @@ app.post("/participants", async (req, res) => {
   }
 });
 
+app.get("/participants", async (req, res) => {
+  const participants = await db.collection("participants").find().toArray();
+  res.status(200).send(participants);
+});
+
 app.listen(PORT, () => console.log(`Server running on port: ${PORT} `));
